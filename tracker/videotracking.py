@@ -4,7 +4,7 @@ import glob
 import multiprocessing as mp
 import os
 import time
-from cv2 import cv2
+import cv2
 import tqdm
 
 from detectron2 import model_zoo

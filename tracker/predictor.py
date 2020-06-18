@@ -3,7 +3,7 @@ import atexit
 import bisect
 import multiprocessing as mp
 from collections import deque
-from cv2 import cv2
+import cv2
 import torch
 
 from detectron2.data import MetadataCatalog
