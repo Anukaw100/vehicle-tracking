@@ -27,12 +27,13 @@ Team
 
 This project is a collaboration between
 
-1) `Anukaw100 <https://github.com/Anukaw100>`_, who is responsible for
-visualizing the data;
-2) `ss-raicangu <https://github.com/ss-raicangu>`_, who is responsible for
-tracking the vehicles;
-3) `RuotongX <https://github.com/RuotongX>`_, who is responsible for configuring
-and running the model.
+1) `Anukaw100`_, who is responsible for visualizing the data;
+2) `ss-raicangu`_, who is responsible for tracking the vehicles;
+3) `RuotongX`_, who is responsible for configuring and running the model.
+
+.. _Anukaw100: https://github.com/Anukaw100
+.. _ss-raicangu: https://github.com/ss-raicangu
+.. _RuotongX: https://github.com/RuotongX
 
 TODOs
 -----
