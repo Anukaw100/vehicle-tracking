@@ -59,7 +59,12 @@ class Visualizer(object):
                     frame, predictions["sem_seg"].argmax(dim=0).to(self.cpu_device)
                 )
 
-            print(predictions)
+            #  FIXME  Complete the prediction filtering and insertion.
+            instance_classes = predictions["instances"].pred_classes
+            mask = (instance_classes == 2)
+            filtered_instance_classes = instance_classes[mask]
+            indices = torch.nonzero(mask, as_tuple=False)
+            print(filtered_instance_classes, indices)
 
             # Converts Matplotlib RGB format to OpenCV BGR format
             vis_frame = cv2.cvtColor(vis_frame.get_image(), cv2.COLOR_RGB2BGR)
