@@ -9,7 +9,7 @@ from detectron2.utils.video_visualizer import VideoVisualizer
 from detectron2.utils.visualizer import ColorMode
 
 class Visualizer(object):
-    def __init__(self, cfg, instance_mode=ColorMode.SEGMENTATION):  #  NOTE  Default ColorMode was IMAGE.
+    def __init__(self, cfg, instance_mode=ColorMode.IMAGE):
         """
         Args:
             cfg (CfgNode):
