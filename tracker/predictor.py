@@ -22,6 +22,7 @@ class Visualizer(object):
         )
         self.cpu_device = torch.device("cpu")
         self.instance_mode = instance_mode
+        self.predictor = DefaultPredictor(cfg)
 
     def _frame_from_video(self, video):
         while video.isOpened():
