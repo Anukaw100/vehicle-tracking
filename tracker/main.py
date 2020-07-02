@@ -1,7 +1,8 @@
 import argparse
 import os
-import cv2
+from cv2 import cv2
 import tqdm
+import multiprocessing as mp
 
 from detectron2 import model_zoo
 from detectron2.config import get_cfg
@@ -26,25 +27,25 @@ def get_parser():
     parser = argparse.ArgumentParser(description="Using Detectron2 to detect vehicles passing through a video")
     parser.add_argument(
         "--config-file",
-        default="configs/",
+        default="configs/quick_schedules/mask_rcnn_R_50_FPN_inference_acc_test.yaml",
         metavar="FILE",
         help="Path to config file"
     )
     parser.add_argument(
         "--input",
-        default="input/video.mp4",
+        default="input.mp4",
         help="Path to a video file"
     )
     parser.add_argument(  #  FIXME  Potentially unnecessary as user doesn't supply output filename.
         "--output",
-        default="output/video.mkv",
+        default="",
         help="A file to save output visualizations. "
              "If not given, output will be shown in an OpenCV window."
     )
     parser.add_argument(
         "--confidence-threshold",
         type=float,
-        default=0.8,
+        default=0.5,
         help="Minimum score for instance predictions to be shown"
     )
     parser.add_argument(
@@ -56,6 +57,7 @@ def get_parser():
     return parser
 
 if __name__ == "__main__":
+    mp.set_start_method("spawn", force=True)
     args = get_parser().parse_args()
 
     #  FIXME  Potentially unnecessary in the final build.
@@ -94,7 +96,7 @@ if __name__ == "__main__":
             filename=output_fname,
             #  NOTE  If this format doesn't work, try another one that is
             # available at http://www.fourcc.org/codecs.php
-            fourcc=cv2.VideoWriter_fourcc(*"x264"),
+            fourcc=cv2.VideoWriter_fourcc(*"MPEG"),
             fps=float(frames_per_second),
             frameSize=(width, height),
             isColor=True
