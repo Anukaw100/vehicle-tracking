@@ -61,10 +61,13 @@ class Visualizer(object):
 
             #  FIXME  Complete the prediction filtering and insertion.
             instance_classes = predictions["instances"].pred_classes
-            mask = (instance_classes == 2)
-            filtered_instance_classes = instance_classes[mask]
-            indices = torch.nonzero(mask, as_tuple=False)
-            print(filtered_instance_classes, indices)
+            # Vehicle IDs are between 2--8 inclusive: 2=car, 3=motorcycle, 4=airplane, 5=bus, 6=train, 7=truck, 8=boat.
+            # Found this out from the self.metadata.
+            mask = (instance_classes >= 2) & (instance_classes <= 8)  # Returns a tensor of 1s (true) and 0s (false) based on the value satisfying the condition.
+            filtered_instance_classes = instance_classes[mask]        # Returns the values at the 1s.
+            indices = torch.nonzero(mask, as_tuple=True)              # Returns the indices of the 1s.
+            panoptic_seg, segments_info = predictions["panoptic_seg"]
+            print(panoptic_seg.to(self.cpu_device), segments_info, filtered_instance_classes, indices, video.get(cv2.CAP_PROP_POS_MSEC) / 1000, sep='\n')
 
             # Converts Matplotlib RGB format to OpenCV BGR format
             vis_frame = cv2.cvtColor(vis_frame.get_image(), cv2.COLOR_RGB2BGR)
