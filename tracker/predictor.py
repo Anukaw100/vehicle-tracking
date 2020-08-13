@@ -2,6 +2,7 @@
 # "https://github.com/facebookresearch/detectron2/tree/master/demo".
 import cv2
 import torch
+import numpy
 
 from detectron2.data import MetadataCatalog
 from detectron2.engine.defaults import DefaultPredictor
@@ -44,17 +45,48 @@ class Visualizer(object):
             ndarray: BGR visualizations of each video frame.
         """
         video_visualizer = VideoVisualizer(self.metadata, self.instance_mode)
+        
+        # Instantiate the object tracker and create variables to store the IDs
+        # and times.
         mot_tracker = Sort()
+        vehicle_arrival_times = {}
+
+        # Read as ID'd (eye-dee-id) instances.
+        def record_time_of_arrival(ided_instances):
+            for instance in ided_instances:
+                instance_id = str(int(instance[-1]))
+                if not instance_id in vehicle_arrival_times:
+                    vehicle_arrival_times[instance_id] = video.get(cv2.CAP_PROP_POS_MSEC)
+
+        def generate_object_id(instances):
+            instance_classes = instances.pred_classes
+
+            # Vehicle IDs are between 2--8 inclusive: 2=car, 3=motorcycle,
+            # 4=airplane, 5=bus, 6=train, 7=truck, 8=boat. Found this out from
+            # self.metadata.
+
+            # Returns a tensor of 1s (true) and 0s (false) based on the value
+            # satisfying the condition.
+            mask = (instance_classes >= 2) & (instance_classes <= 8)
+
+            # Returns the indices of the 'True' values in the mask.
+            indices = torch.nonzero(mask, as_tuple=True)
+            boxes = instances.pred_boxes[indices].tensor.numpy()
+            scores = instances.scores[indices].numpy()
+            detections = numpy.concatenate((boxes, scores[:, numpy.newaxis]), axis=1)
+            tracked_objects = mot_tracker.update(detections)
+            return tracked_objects
 
         #  TODO  Our main area of visualisation lies here.
         def process_predictions(frame, predictions):
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-            if "panoptic_seg" in predictions:
-                panoptic_seg, segments_info = predictions["panoptic_seg"]
-                vis_frame = video_visualizer.draw_panoptic_seg_predictions(
-                    frame, panoptic_seg.to(self.cpu_device), segments_info
-                )
-            elif "instances" in predictions:
+            #if "panoptic_seg" in predictions:
+            #    panoptic_seg, segments_info = predictions["panoptic_seg"]
+            #    vis_frame = video_visualizer.draw_panoptic_seg_predictions(
+            #        frame, panoptic_seg.to(self.cpu_device), segments_info
+            #    )
+            #el
+            if "instances" in predictions:
                 predictions = predictions["instances"].to(self.cpu_device)
                 vis_frame = video_visualizer.draw_instance_predictions(frame, predictions)
             elif "sem_seg" in predictions:
@@ -63,20 +95,13 @@ class Visualizer(object):
                 )
 
             #  FIXME  Complete the prediction filtering and insertion.
-            instance_classes = predictions["instances"].pred_classes
-            # Vehicle IDs are between 2--8 inclusive: 2=car, 3=motorcycle, 4=airplane, 5=bus, 6=train, 7=truck, 8=boat.
-            # Found this out from the self.metadata.
-            mask = (instance_classes >= 2) & (instance_classes <= 8)  # Returns a tensor of 1s (true) and 0s (false) based on the value satisfying the condition.
-            indices = torch.nonzero(mask, as_tuple=True)              # Returns the indices of the 1s.
-            pred_boxes = predictions["instances"].pred_boxes[indices]
-            pred_masks = predictions["instances"].pred_masks[indices]
-            print(pred_boxes, pred_masks, indices, video.get(cv2.CAP_PROP_POS_MSEC) / 1000, sep='\n')
+            record_time_of_arrival(generate_object_id(predictions))
+            print(vehicle_arrival_times)
 
             # Converts Matplotlib RGB format to OpenCV BGR format
             vis_frame = cv2.cvtColor(vis_frame.get_image(), cv2.COLOR_RGB2BGR)
             return vis_frame
 
         frame_gen = self._frame_from_video(video)
-        print(frame_gen)
         for frame in frame_gen:
             yield process_predictions(frame, self.predictor(frame))
