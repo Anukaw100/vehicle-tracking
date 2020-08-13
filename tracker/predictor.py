@@ -6,7 +6,8 @@ import numpy
 
 from detectron2.data import MetadataCatalog
 from detectron2.engine.defaults import DefaultPredictor
-from detectron2.utils.video_visualizer import VideoVisualizer
+from visualizer import CustomVisualizer
+#from detectron2.utils.video_visualizer import VideoVisualizer
 from detectron2.utils.visualizer import ColorMode
 
 from sort import Sort
@@ -44,7 +45,7 @@ class Visualizer(object):
         Yields:
             ndarray: BGR visualizations of each video frame.
         """
-        video_visualizer = VideoVisualizer(self.metadata, self.instance_mode)
+        video_visualizer = CustomVisualizer(self.metadata, self.instance_mode)
         
         # Instantiate the object tracker and create variables to store the IDs
         # and times.
@@ -58,19 +59,19 @@ class Visualizer(object):
                 if not instance_id in vehicle_arrival_times:
                     vehicle_arrival_times[instance_id] = video.get(cv2.CAP_PROP_POS_MSEC)
 
-        def generate_object_id(instances):
-            instance_classes = instances.pred_classes
-
+        def generate_vehicle_indices(instances):
             # Vehicle IDs are between 2--8 inclusive: 2=car, 3=motorcycle,
             # 4=airplane, 5=bus, 6=train, 7=truck, 8=boat. Found this out from
             # self.metadata.
 
             # Returns a tensor of 1s (true) and 0s (false) based on the value
             # satisfying the condition.
-            mask = (instance_classes >= 2) & (instance_classes <= 8)
+            mask = (instances.pred_classes >= 2) & (instances.pred_classes <= 8)
 
             # Returns the indices of the 'True' values in the mask.
-            indices = torch.nonzero(mask, as_tuple=True)
+            return torch.nonzero(mask, as_tuple=True)
+
+        def generate_object_id(instances):
             boxes = instances.pred_boxes[indices].tensor.numpy()
             scores = instances.scores[indices].numpy()
             detections = numpy.concatenate((boxes, scores[:, numpy.newaxis]), axis=1)
@@ -88,15 +89,14 @@ class Visualizer(object):
             #el
             if "instances" in predictions:
                 predictions = predictions["instances"].to(self.cpu_device)
-                vis_frame = video_visualizer.draw_instance_predictions(frame, predictions)
+                filtered_predictions = predictions[generate_vehicle_indices(predictions)]
+                ided_instances = generate_object_id(filtered_predictions)
+                record_time_of_arrival(ided_instances)
+                vis_frame = video_visualizer.draw_instance_predictions(frame, filtered_predictions, ided_instances, vehicle_arrival_times)
             elif "sem_seg" in predictions:
                 vis_frame = video_visualizer.draw_sem_seg(
                     frame, predictions["sem_seg"].argmax(dim=0).to(self.cpu_device)
                 )
-
-            #  FIXME  Complete the prediction filtering and insertion.
-            record_time_of_arrival(generate_object_id(predictions))
-            print(vehicle_arrival_times)
 
             # Converts Matplotlib RGB format to OpenCV BGR format
             vis_frame = cv2.cvtColor(vis_frame.get_image(), cv2.COLOR_RGB2BGR)
