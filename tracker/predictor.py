@@ -8,6 +8,8 @@ from detectron2.engine.defaults import DefaultPredictor
 from detectron2.utils.video_visualizer import VideoVisualizer
 from detectron2.utils.visualizer import ColorMode
 
+from sort import Sort
+
 class Visualizer(object):
     def __init__(self, cfg, instance_mode=ColorMode.IMAGE):
         """
@@ -42,6 +44,7 @@ class Visualizer(object):
             ndarray: BGR visualizations of each video frame.
         """
         video_visualizer = VideoVisualizer(self.metadata, self.instance_mode)
+        mot_tracker = Sort()
 
         #  TODO  Our main area of visualisation lies here.
         def process_predictions(frame, predictions):
@@ -64,15 +67,16 @@ class Visualizer(object):
             # Vehicle IDs are between 2--8 inclusive: 2=car, 3=motorcycle, 4=airplane, 5=bus, 6=train, 7=truck, 8=boat.
             # Found this out from the self.metadata.
             mask = (instance_classes >= 2) & (instance_classes <= 8)  # Returns a tensor of 1s (true) and 0s (false) based on the value satisfying the condition.
-            filtered_instance_classes = instance_classes[mask]        # Returns the values at the 1s.
             indices = torch.nonzero(mask, as_tuple=True)              # Returns the indices of the 1s.
-            panoptic_seg, segments_info = predictions["panoptic_seg"]
-            print(panoptic_seg.to(self.cpu_device), segments_info, filtered_instance_classes, indices, video.get(cv2.CAP_PROP_POS_MSEC) / 1000, sep='\n')
+            pred_boxes = predictions["instances"].pred_boxes[indices]
+            pred_masks = predictions["instances"].pred_masks[indices]
+            print(pred_boxes, pred_masks, filtered_instance_classes, indices, video.get(cv2.CAP_PROP_POS_MSEC) / 1000, sep='\n')
 
             # Converts Matplotlib RGB format to OpenCV BGR format
             vis_frame = cv2.cvtColor(vis_frame.get_image(), cv2.COLOR_RGB2BGR)
             return vis_frame
 
         frame_gen = self._frame_from_video(video)
+        print(frame_gen)
         for frame in frame_gen:
             yield process_predictions(frame, self.predictor(frame))
