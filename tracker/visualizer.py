@@ -51,7 +51,7 @@ class CustomVisualizer:
         ], "Other mode not supported yet."
         self._instance_mode = instance_mode
 
-    def draw_instance_predictions(self, frame, predictions, ided_vehicles, vehicle_times):
+    def draw_instance_predictions(self, frame, predictions, ided_vehicles, vehicle_arrival_times, current_time):
         """
         Draw instance-level prediction results on an image.
 
@@ -101,7 +101,7 @@ class CustomVisualizer:
 
         for index in range(len(predictions)):
             vehicle_id = ided_vehicles[index][4]
-            frame_visualizer.draw_text("{} = {}:{}".format(vehicle_id, vehicle_times[vehicle_id] / 60000, vehicle_times[vehicle_id]),
+            frame_visualizer.draw_text("{} = {}:{}".format(vehicle_id, (current_time - vehicle_arrival_times[vehicle_id]) / 60000, (current_time - vehicle_arrival_times[vehicle_id]) / 1000),
                     tuple((ided_vehicles[index][0] + ided_vehicles[index][2]) / 2, (ided_vehicles[1] + ided_vehicles[3]) / 2))
             if predictions.has("pred_masks"):
                 frame_visualizer.draw_binary_mask(masks[index], color=colors[index], alpha=alpha)

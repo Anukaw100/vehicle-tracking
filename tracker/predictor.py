@@ -92,7 +92,7 @@ class Visualizer(object):
                 filtered_predictions = predictions[generate_vehicle_indices(predictions)]
                 ided_instances = generate_object_id(filtered_predictions)
                 record_time_of_arrival(ided_instances)
-                vis_frame = video_visualizer.draw_instance_predictions(frame, filtered_predictions, ided_instances, vehicle_arrival_times)
+                vis_frame = video_visualizer.draw_instance_predictions(frame, filtered_predictions, ided_instances, vehicle_arrival_times, video.get(cv2.CAP_PROP_POS_MSEC))
             elif "sem_seg" in predictions:
                 vis_frame = video_visualizer.draw_sem_seg(
                     frame, predictions["sem_seg"].argmax(dim=0).to(self.cpu_device)
