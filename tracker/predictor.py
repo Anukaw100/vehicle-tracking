@@ -70,7 +70,7 @@ class Visualizer(object):
             indices = torch.nonzero(mask, as_tuple=True)              # Returns the indices of the 1s.
             pred_boxes = predictions["instances"].pred_boxes[indices]
             pred_masks = predictions["instances"].pred_masks[indices]
-            print(pred_boxes, pred_masks, filtered_instance_classes, indices, video.get(cv2.CAP_PROP_POS_MSEC) / 1000, sep='\n')
+            print(pred_boxes, pred_masks, indices, video.get(cv2.CAP_PROP_POS_MSEC) / 1000, sep='\n')
 
             # Converts Matplotlib RGB format to OpenCV BGR format
             vis_frame = cv2.cvtColor(vis_frame.get_image(), cv2.COLOR_RGB2BGR)
