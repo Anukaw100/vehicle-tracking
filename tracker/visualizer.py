@@ -10,7 +10,7 @@ from detectron2.utils.visualizer import (
     _PanopticPrediction,
 )
 
-from .colormap import random_color
+from detectron2.utils.colormap import random_color
 
 
 class _DetectedInstance:
@@ -88,7 +88,7 @@ class CustomVisualizer:
         ]
         colors = self._assign_colors(detected)
 
-        labels = _create_text_labels(classes, scores, self.metadata.get("thing_classes", None))
+        labels = self._create_text_labels(classes, self.metadata.get("thing_classes", None), ided_vehicles, vehicle_arrival_times)
 
         if self._instance_mode == ColorMode.IMAGE_BW:
             # any() returns uint8 tensor
@@ -99,23 +99,25 @@ class CustomVisualizer:
         else:
             alpha = 0.5
 
-        for index in range(len(predictions)):
-            vehicle_id = ided_vehicles[index][4]
-            frame_visualizer.draw_text("{} = {}:{}".format(vehicle_id, (current_time - vehicle_arrival_times[vehicle_id]) / 60000, (current_time - vehicle_arrival_times[vehicle_id]) / 1000),
-                    tuple((ided_vehicles[index][0] + ided_vehicles[index][2]) / 2, (ided_vehicles[1] + ided_vehicles[3]) / 2))
-            if predictions.has("pred_masks"):
-                frame_visualizer.draw_binary_mask(masks[index], color=colors[index], alpha=alpha)
-            else:
-                frame_visualizer.draw_box(tuple(boxes[index][:4]), alpha=alpha)
+        #for index in range(len(predictions)):
+            #if index < len(ided_vehicles):
+            #    vehicle_id = str(int(ided_vehicles[index][4]))
+            #    frame_visualizer.draw_text("{} = {}:{}".format(vehicle_id, (current_time - vehicle_arrival_times[vehicle_id]) / 60000, (current_time - vehicle_arrival_times[vehicle_id]) / 1000),
+            #            ((ided_vehicles[index][0] + ided_vehicles[index][2]) / 2, (ided_vehicles[1] + ided_vehicles[3]) / 2))
 
-        #frame_visualizer.overlay_instances(
-        #    boxes=None if masks is not None else boxes,  # boxes are a bit distracting
-        #    masks=masks,
-        #    labels=labels,
-        #    keypoints=keypoints,
-        #    assigned_colors=colors,
-        #    alpha=alpha,
-        #)
+            #if predictions.has("pred_masks"):
+            #    frame_visualizer.draw_binary_mask(masks.numpy()[index], color=colors[index], alpha=alpha)
+            #else:
+            #frame_visualizer.draw_box(tuple(boxes[index][:4]), alpha=alpha)
+
+        frame_visualizer.overlay_instances(
+            boxes=None if masks is not None else boxes,  # boxes are a bit distracting
+            masks=masks,
+            labels=labels,
+            keypoints=keypoints,
+            assigned_colors=colors,
+            alpha=alpha,
+        )
 
         return frame_visualizer.output
 
@@ -186,6 +188,23 @@ class CustomVisualizer:
             alpha=alpha,
         )
         return frame_visualizer.output
+
+    def _create_text_labels(self, classes, class_names, vehicle_ids, vehicle_arrival_times):
+        labels = None
+
+        if classes is not None and class_names is not None and len(class_names) > 0:
+            labels = [class_names[i] for i in classes]
+
+        if vehicle_ids is not None and vehicle_arrival_times is not None:
+            if labels is None:
+                labels = ["{:.0f}:{:.0f}".format(vehicle_arrival_times[str(int(vehicle_id))] / 60000, vehicle_arrival_times[str(int(vehicle_id))] / 1000) for vehicle_id in vehicle_ids[:,4]]
+            else:
+                labels = ["{} {} = {:.0f}:{:.0f}".format(label, int(vehicle_id), vehicle_arrival_times[str(int(vehicle_id))] / 60000, vehicle_arrival_times[str(int(vehicle_id))] / 1000) for label, vehicle_id in zip(labels, vehicle_ids[:,4])]
+
+        while len(labels) < len(classes):
+            labels.append("Not tracked in SORT")
+
+        return labels
 
     def _assign_colors(self, instances):
         """

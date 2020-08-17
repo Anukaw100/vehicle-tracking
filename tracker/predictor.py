@@ -7,7 +7,7 @@ import numpy
 from detectron2.data import MetadataCatalog
 from detectron2.engine.defaults import DefaultPredictor
 from visualizer import CustomVisualizer
-#from detectron2.utils.video_visualizer import VideoVisualizer
+from detectron2.utils.video_visualizer import VideoVisualizer
 from detectron2.utils.visualizer import ColorMode
 
 from sort import Sort
@@ -72,8 +72,8 @@ class Visualizer(object):
             return torch.nonzero(mask, as_tuple=True)
 
         def generate_object_id(instances):
-            boxes = instances.pred_boxes[indices].tensor.numpy()
-            scores = instances.scores[indices].numpy()
+            boxes = instances.pred_boxes.tensor.numpy()
+            scores = instances.scores.numpy()
             detections = numpy.concatenate((boxes, scores[:, numpy.newaxis]), axis=1)
             tracked_objects = mot_tracker.update(detections)
             return tracked_objects
@@ -92,7 +92,10 @@ class Visualizer(object):
                 filtered_predictions = predictions[generate_vehicle_indices(predictions)]
                 ided_instances = generate_object_id(filtered_predictions)
                 record_time_of_arrival(ided_instances)
+                for index in range(len(ided_instances)):
+                    print(self.metadata.get('thing_classes', None)[filtered_predictions.pred_classes[index]], ided_instances[:,4][index])
                 vis_frame = video_visualizer.draw_instance_predictions(frame, filtered_predictions, ided_instances, vehicle_arrival_times, video.get(cv2.CAP_PROP_POS_MSEC))
+                #vis_frame = video_visualizer.draw_instance_predictions(frame, filtered_predictions)
             elif "sem_seg" in predictions:
                 vis_frame = video_visualizer.draw_sem_seg(
                     frame, predictions["sem_seg"].argmax(dim=0).to(self.cpu_device)
