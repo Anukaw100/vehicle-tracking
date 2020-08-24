@@ -104,11 +104,19 @@ if __name__ == "__main__":
 
     assert os.path.isfile(args.input)  # Asserts that the input file exists.
 
+
+
     # Writes the output.
     for vis_frame in tqdm.tqdm(visualizer.run_on_video(video), total=num_frames):
         #  FIXME  Potentially unnecessary. Reason above! Should update
         # this to work in a website.
-        if args.output:
+
+
+        vis_frame = cv2.putText(
+            vis_frame,"Hello",(50, 50), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 0), 2
+        )
+
+        if args.output:    
             output_file.write(vis_frame)
         else:
             cv2.namedWindow(basename, cv2.WINDOW_NORMAL)

@@ -61,6 +61,8 @@ class Visualizer(object):
                     frame, panoptic_seg.to(self.cpu_device), segments_info
                 )
             elif "instances" in predictions:
+                
+
                 predictions = predictions["instances"].to(self.cpu_device)
                 
                 vis_frame = video_visualizer.draw_instance_predictions(frame, predictions)
