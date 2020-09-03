@@ -189,17 +189,17 @@ class CustomVisualizer:
         )
         return frame_visualizer.output
 
-    def _create_text_labels(self, classes, class_names, vehicle_ids, vehicle_arrival_times):
+    def _create_text_labels(self, classes, class_names, vehicles, vehicle_arrival_times):
         labels = None
 
         if classes is not None and class_names is not None and len(class_names) > 0:
             labels = [class_names[i] for i in classes]
 
-        if vehicle_ids is not None and vehicle_arrival_times is not None:
+        if vehicles is not None and vehicle_arrival_times is not None:
             if labels is None:
-                labels = ["{:.0f}:{:.0f}".format(vehicle_arrival_times[str(int(vehicle_id))] / 60000, vehicle_arrival_times[str(int(vehicle_id))] / 1000) for vehicle_id in vehicle_ids[:,4]]
+                labels = ["{:.0f}:{:.0f}".format(vehicle_arrival_times[str(vehicle.track_id)] / 60000, vehicle_arrival_times[str(vehicle.track_id)] / 1000) for vehicle in vehicle_ids]
             else:
-                labels = ["{} {} = {:.0f}:{:.0f}".format(label, int(vehicle_id), vehicle_arrival_times[str(int(vehicle_id))] / 60000, vehicle_arrival_times[str(int(vehicle_id))] / 1000) for label, vehicle_id in zip(labels, vehicle_ids[:,4])]
+                labels = ["{} {} = {:.0f}:{:.0f}".format(label, vehicle.track_id, vehicle_arrival_times[str(vehicle.track_id)] / 60000, vehicle_arrival_times[str(vehicle.track_id)] / 1000) for label, vehicle in zip(labels, vehicles)]
 
         while len(labels) < len(classes):
             labels.append("Not tracked in SORT")

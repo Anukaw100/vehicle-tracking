@@ -10,7 +10,10 @@ from visualizer import CustomVisualizer
 from detectron2.utils.video_visualizer import VideoVisualizer
 from detectron2.utils.visualizer import ColorMode
 
-from sort import Sort
+#from sort import Sort
+from deep_sort.deep_sort.detection import Detection
+from deep_sort.deep_sort.nn_matching import NearestNeighborDistanceMetric
+from deep_sort.deep_sort.tracker import Tracker
 
 class Visualizer(object):
     def __init__(self, cfg, instance_mode=ColorMode.IMAGE):
@@ -49,13 +52,13 @@ class Visualizer(object):
         
         # Instantiate the object tracker and create variables to store the IDs
         # and times.
-        mot_tracker = Sort()
+        mot_tracker = Tracker(NearestNeighborDistanceMetric("euclidean", 50.0))
         vehicle_arrival_times = {}
 
         # Read as ID'd (eye-dee-id) instances.
         def record_time_of_arrival(ided_instances):
             for instance in ided_instances:
-                instance_id = str(int(instance[-1]))
+                instance_id = instance.track_id
                 if not instance_id in vehicle_arrival_times:
                     vehicle_arrival_times[instance_id] = video.get(cv2.CAP_PROP_POS_MSEC)
 
@@ -74,11 +77,11 @@ class Visualizer(object):
         def generate_object_id(instances):
             boxes = instances.pred_boxes.tensor.numpy()
             scores = instances.scores.numpy()
-            detections = numpy.concatenate((boxes, scores[:, numpy.newaxis]), axis=1)
-            tracked_objects = mot_tracker.update(detections)
-            return tracked_objects
+            detections = [Detection(boxes[index], scores[index], NoneType) for index in range(len(boxes))]
+            mot_tracker.predict()
+            mot_tracker.update(detections)
+            return mot_tracker.tracks
 
-        #  TODO  Our main area of visualisation lies here.
         def process_predictions(frame, predictions):
             frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
             #if "panoptic_seg" in predictions:
@@ -92,8 +95,6 @@ class Visualizer(object):
                 filtered_predictions = predictions[generate_vehicle_indices(predictions)]
                 ided_instances = generate_object_id(filtered_predictions)
                 record_time_of_arrival(ided_instances)
-                for index in range(len(ided_instances)):
-                    print(self.metadata.get('thing_classes', None)[filtered_predictions.pred_classes[index]], ided_instances[:,4][index])
                 vis_frame = video_visualizer.draw_instance_predictions(frame, filtered_predictions, ided_instances, vehicle_arrival_times, video.get(cv2.CAP_PROP_POS_MSEC))
                 #vis_frame = video_visualizer.draw_instance_predictions(frame, filtered_predictions)
             elif "sem_seg" in predictions:
